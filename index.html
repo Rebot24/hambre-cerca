@@ -244,24 +244,38 @@ function matcher(qRaw){
   };
 }
 
-const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://z.overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
+const CACHE_MS=24*3600*1000;
+function cacheGet(k){ try{ const v=JSON.parse(localStorage.getItem("hc:"+k)); if(v && Date.now()-v.t<CACHE_MS) return v.d; }catch(e){} return null; }
+function cacheSet(k,d){ try{ localStorage.setItem("hc:"+k,JSON.stringify({t:Date.now(),d})); }catch(e){} }
+// pide a todos los servidores a la vez y se queda con el primero que responda
+function raceOverpass(q){
+  const ctrls=OVERPASS.map(()=>new AbortController());
+  const tm=setTimeout(()=>ctrls.forEach(c=>c.abort()),60000);
+  return Promise.any(OVERPASS.map((u,i)=>
+    fetch(u+"?data="+encodeURIComponent(q),{signal:ctrls[i].signal})
+      .then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+  )).then(j=>{ ctrls.forEach(c=>c.abort()); return j; }).finally(()=>clearTimeout(tm));
+}
 async function fetchPlaces(){
-  const r=+$("radius").value;
-  const key=pos.lat.toFixed(4)+","+pos.lon.toFixed(4)+","+r;
+  const want=+$("radius").value;
+  const r=Math.max(want,2000); // se descarga al menos 2 km y se filtra en el móvil
+  const key=pos.lat.toFixed(3)+","+pos.lon.toFixed(3)+","+r;
   if(key===lastKey) return;
-  showState("loading");
-  const q=`[out:json][timeout:25];nwr["amenity"~"^(restaurant|fast_food|cafe|bar|pub|ice_cream|food_court|biergarten)$"]["name"](around:${r},${pos.lat},${pos.lon});out center tags;`;
-  let data=null, err=null;
-  for(const url of OVERPASS){
+  let elements=cacheGet(key);
+  if(!elements){
+    showState("loading");
+    const slow=setTimeout(()=>{ const sp=$("state").querySelector("span"); if(sp) sp.textContent="Los servidores de mapas gratuitos van lentos ahora mismo. Un momento…"; },6000);
+    const q=`[out:json][timeout:50];nwr["amenity"~"^(restaurant|fast_food|cafe|bar|pub|ice_cream|food_court|biergarten)$"]["name"](around:${r},${pos.lat},${pos.lon});out center tags;`;
     try{
-      const res=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});
-      if(!res.ok) throw new Error("HTTP "+res.status);
-      data=await res.json(); break;
-    }catch(e){ err=e; }
+      const data=await raceOverpass(q);
+      elements=data.elements.map(el=>({type:el.type,id:el.id,lat:el.lat??el.center?.lat,lon:el.lon??el.center?.lon,tags:el.tags||{}}));
+      cacheSet(key,elements);
+    }catch(e){ clearTimeout(slow); showState("error"); return; }
+    clearTimeout(slow);
   }
-  if(!data){ showState("error"); return; }
   lastKey=key;
-  places=data.elements.map(el=>{
+  places=elements.map(el=>{
     const lat=el.lat??el.center?.lat, lon=el.lon??el.center?.lon, t=el.tags||{};
     return {
       id:el.type+el.id, name:t.name, amenity:t.amenity, tags:t, lat, lon,
@@ -277,7 +291,8 @@ function render(){
   if(!pos) return;
   const match=matcher($("q").value);
   const openOnly=$("openOnly").checked;
-  let list=places.filter(match);
+  const maxD=+$("radius").value;
+  let list=places.filter(p=>p.dist<=maxD && match(p));
   if(openOnly) list=list.filter(p=>p.open===true);
   list.sort((a,b)=>{
     const oa=a.open===true?0:a.open===null?1:2, ob=b.open===true?0:b.open===null?1:2;
