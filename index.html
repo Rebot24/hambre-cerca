@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hambre Cerca</title>
+<meta name="description" content="Encuentra restaurantes, bares y cafeterías cerca de ti.">
+<meta name="theme-color" content="#1f3a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hambre Cerca">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3a2e'/%3E%3Ccircle cx='32' cy='28' r='13' fill='none' stroke='%23f4b942' stroke-width='5'/%3E%3Cpath d='M32 41v12' stroke='%23f4b942' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna estrecha tipo app; cabecera verde fija con buscador, lista debajo */
+:root{
+  --bg:#f3f5f1; --surface:#ffffff; --ink:#18241e; --muted:#5e6b63; --line:#dde3dc;
+  --brand:#1f3a2e; --on-brand:#f3f5f1; --accent:#f4b942; --on-accent:#1b1a12;
+  --open:#1d7a46; --closed:#b23a2b;
+  --display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1512; --surface:#18211c; --ink:#e8eee9; --muted:#9aa8a0; --line:#28332d;
+  --brand:#14251d; --on-brand:#e8eee9; --accent:#f4b942; --on-accent:#1b1a12;
+  --open:#4cc27f; --closed:#ef7a6a; color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--brand);color:var(--on-brand);padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:5;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+header .wrap{padding-block:14px 14px;display:grid;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font:800 1.5rem/1 var(--display);letter-spacing:-.02em;margin:0}
+h1 span{color:var(--accent)}
+.loc{background:none;border:1px solid rgba(255,255,255,.28);color:var(--on-brand);font:500 .82rem var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;font:500 1.05rem var(--body);padding:13px 14px;border-radius:12px;border:0;background:var(--on-brand);color:#18241e;outline:none}
+.search input:focus-visible{box-shadow:0 0 0 3px var(--accent)}
+.search button{font:600 1rem var(--body);padding:0 16px;border-radius:12px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px 2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font:500 .9rem var(--body);padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:var(--on-brand);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-block:14px 6px;color:var(--muted);font-size:.9rem}
+.bar label{display:flex;align-items:center;gap:6px}
+.bar select{font:500 .9rem var(--body);padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.bar .count{margin-left:auto;font-variant-numeric:tabular-nums}
+.toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--brand)}
+ul{list-style:none;margin:0;padding:0 0 32px;display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:6px}
+.row1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.name{font:600 1.08rem/1.25 var(--display);margin:0;min-width:0;overflow-wrap:anywhere}
+.dist{flex:none;font-weight:600;font-variant-numeric:tabular-nums}
+.meta{color:var(--muted);font-size:.9rem;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.pill{font-size:.78rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.pill.open{color:var(--open)} .pill.closed{color:var(--closed)}
+.addr{color:var(--muted);font-size:.88rem}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.actions a{font:600 .88rem var(--body);text-decoration:none;padding:8px 12px;border-radius:10px;border:1px solid var(--line);color:var(--ink);background:var(--bg)}
+.actions a.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.actions a:focus-visible,.chip:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.state{text-align:center;padding:40px 12px;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.state strong{color:var(--ink);font:600 1.15rem var(--display)}
+.state button{font:600 1rem var(--body);padding:11px 16px;border-radius:12px;border:0;background:var(--brand);color:var(--on-brand);cursor:pointer}
+.manual{display:flex;gap:8px;width:100%;max-width:420px}
+.manual input{flex:1;min-width:0;font:500 1rem var(--body);padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--brand);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+footer{color:var(--muted);font-size:.78rem;text-align:center;padding-block:0 28px}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>Hambre <span>Cerca</span></h1>
+      <button class="loc" id="locBtn" type="button" title="Cambiar ubicación">📍 Buscando…</button>
+    </div>
+    <form class="search" id="form" autocomplete="off">
+      <input id="q" type="search" enterkeyhint="search" placeholder="¿Qué te apetece? pizza, sushi, tapas…" aria-label="Qué quieres comer">
+      <button type="submit">Buscar</button>
+    </form>
+    <div class="chips" id="chips" role="group" aria-label="Búsquedas rápidas"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="bar">
+    <label>Radio
+      <select id="radius">
+        <option value="500">500 m</option>
+        <option value="1000" selected>1 km</option>
+        <option value="2000">2 km</option>
+        <option value="5000">5 km</option>
+      </select>
+    </label>
+    <label class="toggle"><input type="checkbox" id="openOnly"> Solo abiertos</label>
+    <span class="count" id="count"></span>
+  </div>
+  <ul id="list"></ul>
+  <div class="state" id="state"></div>
+</main>
+<footer class="wrap">Datos de lugares © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores de OpenStreetMap</a>. Las reseñas se abren en Google Maps.</footer>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const norm = s => (s||"").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+
+const QUICK = ["Todo","Tapas","Pizza","Hamburguesa","Sushi","Café","Brunch","Kebab","Chino","Mexicano","Vegano","Helado","Bar"];
+
+const AMENITY_ES = {restaurant:"Restaurante",fast_food:"Comida rápida",cafe:"Cafetería",bar:"Bar",pub:"Pub",ice_cream:"Heladería",food_court:"Zona de comidas",biergarten:"Cervecería"};
+const CUISINE_ES = {pizza:"Pizza",italian:"Italiano",spanish:"Español",tapas:"Tapas",japanese:"Japonés",sushi:"Sushi",chinese:"Chino",burger:"Hamburguesas",kebab:"Kebab",mexican:"Mexicano",indian:"Indio",thai:"Tailandés",vietnamese:"Vietnamita",korean:"Coreano",american:"Americano",mediterranean:"Mediterráneo",regional:"Cocina regional",seafood:"Marisco",fish:"Pescado",chicken:"Pollo",sandwich:"Bocadillos",coffee_shop:"Café",breakfast:"Desayunos",brunch:"Brunch",ice_cream:"Helados",asian:"Asiático",peruvian:"Peruano",argentinian:"Argentino",steak_house:"Carnes",grill:"Parrilla",barbecue:"Barbacoa",vegetarian:"Vegetariano",vegan:"Vegano",greek:"Griego",french:"Francés",turkish:"Turco",lebanese:"Libanés",arab:"Árabe",venezuelan:"Venezolano",colombian:"Colombiano",ramen:"Ramen",noodle:"Fideos",bakery:"Panadería",crepe:"Crepes",donut:"Dónuts",paella:"Paella",basque:"Vasco",galician:"Gallego",catalan:"Catalán",asturian:"Asturiano",andalusian:"Andaluz",tex_mex:"Tex-Mex",cake:"Pasteles",juice:"Zumos",bubble_tea:"Bubble tea",chocolate:"Chocolatería",churros:"Churros",wine_bar:"Vinos",international:"Internacional",fusion:"Fusión",portuguese:"Portugués",brazilian:"Brasileño",cuban:"Cubano",moroccan:"Marroquí",pakistani:"Pakistaní",nepalese:"Nepalí",hawaiian:"Hawaiano",poke:"Poke",wok:"Wok",dumpling:"Dumplings",bagel:"Bagels",hot_dog:"Perritos",fish_and_chips:"Fish & chips",tea:"Té",friture:"Fritos"};
+
+// sinónimos en español -> etiquetas OSM (cuisine) o tipos (amenity) o dieta
+const SYN = [
+  [["pizza","pizzeria","italiano","pasta"],{c:["pizza","italian"]}],
+  [["sushi","japones","japo","ramen","poke"],{c:["sushi","japanese","ramen","poke"]}],
+  [["hamburguesa","burger","hamburgueseria"],{c:["burger","american"]}],
+  [["tapas","tapeo","espanol","menu del dia","menu","casero","paella"],{c:["tapas","spanish","regional","paella","mediterranean","basque","galician","catalan","asturian","andalusian"]}],
+  [["chino","china","wok","asiatico"],{c:["chinese","asian","wok","dumpling","noodle"]}],
+  [["mexicano","tacos","burrito","nachos"],{c:["mexican","tex_mex"]}],
+  [["kebab","doner","turco","shawarma","durum"],{c:["kebab","turkish","lebanese","arab"]}],
+  [["indio","curry","hindu"],{c:["indian","pakistani","nepalese"]}],
+  [["vegano"],{c:["vegan"],d:"vegan"}],
+  [["vegetariano","veggie"],{c:["vegetarian","vegan"],d:"vegetarian"}],
+  [["cafe","cafeteria","coffee"],{c:["coffee_shop"],a:["cafe"]}],
+  [["desayuno","brunch","tostada"],{c:["breakfast","brunch","coffee_shop"],a:["cafe"]}],
+  [["helado","heladeria"],{c:["ice_cream"],a:["ice_cream"]}],
+  [["bar","cerveza","copas","pub","vino"],{a:["bar","pub","biergarten"],c:["wine_bar"]}],
+  [["marisco","pescado","mariscos"],{c:["seafood","fish"]}],
+  [["carne","asador","parrilla","steak"],{c:["steak_house","grill","barbecue","argentinian"]}],
+  [["pollo","pollo asado"],{c:["chicken"]}],
+  [["bocadillo","sandwich","bocata"],{c:["sandwich","bagel"]}],
+  [["comida rapida","rapida","fast food"],{a:["fast_food"]}],
+  [["churros","chocolate"],{c:["churros","chocolate"]}],
+  [["peruano","ceviche"],{c:["peruvian"]}],
+  [["tailandes","thai"],{c:["thai"]}],
+  [["coreano"],{c:["korean"]}],
+  [["griego"],{c:["greek"]}],
+  [["arabe","libanes","marroqui","falafel"],{c:["arab","lebanese","moroccan"]}]
+];
+
+let pos = null, placeLabel = "", places = [], lastKey = "";
+
+function buildChips(){
+  const box = $("chips");
+  QUICK.forEach(t=>{
+    const b=document.createElement("button");
+    b.type="button"; b.className="chip"; b.textContent=t;
+    b.setAttribute("aria-pressed", t==="Todo"?"true":"false");
+    b.onclick=()=>{ $("q").value = t==="Todo"?"":t; render(); };
+    box.appendChild(b);
+  });
+}
+function syncChips(){
+  const q=norm($("q").value);
+  document.querySelectorAll(".chip").forEach(b=>{
+    const t=norm(b.textContent);
+    b.setAttribute("aria-pressed", (t==="todo"&&!q)||(t===q) ? "true":"false");
+  });
+}
+
+function haversine(a,b){
+  const R=6371000, toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLon=toR(b.lon-a.lon);
+  const h=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+const fmtDist = m => m<1000 ? Math.round(m/10)*10+" m" : (m/1000).toFixed(1).replace(".",",")+" km";
+const walkMin = m => Math.max(1,Math.round(m/80));
+
+// ---- horario (formato opening_hours de OSM, casos habituales) ----
+const DAYS=["Mo","Tu","We","Th","Fr","Sa","Su"];
+function parseDays(sel){
+  const set=new Set();
+  for(const part of sel.split(",")){
+    const m=part.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)(?:\s*-\s*(Mo|Tu|We|Th|Fr|Sa|Su))?$/);
+    if(!m) return null;
+    let i=DAYS.indexOf(m[1]); const j=m[2]?DAYS.indexOf(m[2]):i;
+    for(let k=0;k<7;k++){ set.add(i); if(i===j)break; i=(i+1)%7; }
+  }
+  return set;
+}
+function parseTimes(t){
+  t=t.trim();
+  if(/^(off|closed)$/i.test(t)) return [];
+  const out=[];
+  for(const r of t.split(",")){
+    const m=r.trim().match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\+?$/);
+    if(!m) return null;
+    const s=+m[1]*60+ +m[2]; let e=+m[3]*60+ +m[4];
+    if(e<=s) e+=1440;
+    out.push([s,e]);
+  }
+  return out;
+}
+function isOpenNow(oh){
+  if(!oh) return null;
+  oh=oh.trim();
+  if(oh==="24/7") return true;
+  const sched=Array.from({length:7},()=>null);
+  for(let rule of oh.split(";")){
+    rule=rule.trim(); if(!rule) continue;
+    if(/^(PH|SH)\b/.test(rule)) continue;
+    let days, times;
+    const m=rule.match(/^((?:(?:Mo|Tu|We|Th|Fr|Sa|Su)(?:\s*-\s*(?:Mo|Tu|We|Th|Fr|Sa|Su))?\s*,?\s*)+)\s*(?:,\s*PH)?\s+(.*)$/);
+    if(m){ days=parseDays(m[1].replace(/,\s*$/,"")); times=parseTimes(m[2]); }
+    else { days=new Set([0,1,2,3,4,5,6]); times=parseTimes(rule); }
+    if(!days||!times) return null;
+    days.forEach(d=>sched[d]=times);
+  }
+  const now=new Date(); const d=(now.getDay()+6)%7; const min=now.getHours()*60+now.getMinutes();
+  const today=sched[d], yest=sched[(d+6)%7];
+  if(today===null && yest===null) return null;
+  if(today && today.some(([s,e])=>min>=s&&min<e)) return true;
+  if(yest && yest.some(([s,e])=>e>1440 && min<e-1440)) return true;
+  return false;
+}
+
+// ---- búsqueda ----
+function matcher(qRaw){
+  const q=norm(qRaw);
+  if(!q || q==="todo") return ()=>true;
+  const cs=new Set(), as=new Set(), ds=new Set();
+  for(const [keys,v] of SYN){
+    if(keys.some(k=>k===q || (q.length>=3 && (k.startsWith(q)||q.startsWith(k))))){
+      (v.c||[]).forEach(x=>cs.add(x)); (v.a||[]).forEach(x=>as.add(x)); if(v.d) ds.add(v.d);
+    }
+  }
+  return p=>{
+    if(norm(p.name).includes(q)) return true;
+    if(p.cuisines.some(c=>cs.has(c) || norm(CUISINE_ES[c]||c).includes(q))) return true;
+    if(as.has(p.amenity)) return true;
+    for(const d of ds){ if(p.tags["diet:"+d]==="yes"||p.tags["diet:"+d]==="only") return true; }
+    return false;
+  };
+}
+
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
+async function fetchPlaces(){
+  const r=+$("radius").value;
+  const key=pos.lat.toFixed(4)+","+pos.lon.toFixed(4)+","+r;
+  if(key===lastKey) return;
+  showState("loading");
+  const q=`[out:json][timeout:25];nwr["amenity"~"^(restaurant|fast_food|cafe|bar|pub|ice_cream|food_court|biergarten)$"]["name"](around:${r},${pos.lat},${pos.lon});out center tags;`;
+  let data=null, err=null;
+  for(const url of OVERPASS){
+    try{
+      const res=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      data=await res.json(); break;
+    }catch(e){ err=e; }
+  }
+  if(!data){ showState("error"); return; }
+  lastKey=key;
+  places=data.elements.map(el=>{
+    const lat=el.lat??el.center?.lat, lon=el.lon??el.center?.lon, t=el.tags||{};
+    return {
+      id:el.type+el.id, name:t.name, amenity:t.amenity, tags:t, lat, lon,
+      cuisines:(t.cuisine||"").split(";").map(s=>s.trim().toLowerCase()).filter(Boolean),
+      dist:haversine(pos,{lat,lon}), open:isOpenNow(t.opening_hours),
+      addr:[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(", ")
+    };
+  }).filter(p=>p.lat!=null);
+}
+
+function render(){
+  syncChips();
+  if(!pos) return;
+  const match=matcher($("q").value);
+  const openOnly=$("openOnly").checked;
+  let list=places.filter(match);
+  if(openOnly) list=list.filter(p=>p.open===true);
+  list.sort((a,b)=>{
+    const oa=a.open===true?0:a.open===null?1:2, ob=b.open===true?0:b.open===null?1:2;
+    if(Math.abs(a.dist-b.dist)<150 && oa!==ob) return oa-ob;
+    return a.dist-b.dist;
+  });
+  const ul=$("list"); ul.innerHTML="";
+  $("count").textContent = list.length ? list.length+(list.length===1?" sitio":" sitios") : "";
+  if(!list.length){ showState(places.length?"empty":"none"); return; }
+  $("state").hidden=true;
+  for(const p of list.slice(0,80)){
+    const li=document.createElement("li"); li.className="card";
+    const kind=[AMENITY_ES[p.amenity]||"Local", ...p.cuisines.slice(0,2).map(c=>CUISINE_ES[c]||c.replace(/_/g," "))];
+    const gq=encodeURIComponent(p.name+" "+(p.addr||"")).replace(/%20/g,"+");
+    li.innerHTML=`
+      <div class="row1"><h2 class="name"></h2><span class="dist">${fmtDist(p.dist)}</span></div>
+      <div class="meta"><span class="kind"></span><span>· ${walkMin(p.dist)} min andando</span>${p.open===true?'<span class="pill open">Abierto</span>':p.open===false?'<span class="pill closed">Cerrado</span>':''}</div>
+      ${p.addr?'<div class="addr"></div>':''}
+      <div class="actions">
+        <a class="primary" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${p.lat},${p.lon}">Cómo llegar</a>
+        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${gq}&center=${p.lat},${p.lon}">⭐ Ver reseñas</a>
+        ${p.tags.phone||p.tags["contact:phone"]?`<a href="tel:${(p.tags.phone||p.tags["contact:phone"]).split(";")[0].replace(/\s/g,"")}">Llamar</a>`:""}
+      </div>`;
+    li.querySelector(".name").textContent=p.name;
+    li.querySelector(".kind").textContent=[...new Set(kind)].join(" · ");
+    if(p.addr) li.querySelector(".addr").textContent=p.addr;
+    ul.appendChild(li);
+  }
+}
+
+function showState(kind){
+  const s=$("state"); s.hidden=false; $("list").innerHTML=""; $("count").textContent="";
+  if(kind==="loading"){ s.innerHTML='<div class="spin" aria-hidden="true"></div><span>Buscando sitios cerca…</span>'; return; }
+  if(kind==="locating"){ s.innerHTML='<div class="spin" aria-hidden="true"></div><span>Pidiendo tu ubicación…</span>'; return; }
+  if(kind==="error"){ s.innerHTML='<strong>No he podido cargar los sitios</strong><span>El servicio de mapas no responde. Prueba otra vez en un momento.</span><button type="button" id="retry">Reintentar</button>'; $("retry").onclick=()=>{lastKey="";go();}; return; }
+  if(kind==="empty"){ s.innerHTML='<strong>Nada con ese nombre por aquí</strong><span>Prueba otra palabra o amplía el radio.</span>'; return; }
+  if(kind==="none"){ s.innerHTML='<strong>No hay sitios en este radio</strong><span>Amplía el radio de búsqueda.</span>'; return; }
+  if(kind==="noloc"){
+    s.innerHTML='<strong>¿Dónde estás?</strong><span>Activa la ubicación o escribe una calle, barrio o ciudad.</span><button type="button" id="geo">📍 Usar mi ubicación</button><form class="manual" id="manual"><input id="place" placeholder="Ej.: Plaza Mayor, Madrid" aria-label="Lugar"><button type="submit">Ir</button></form>';
+    $("geo").onclick=locate;
+    $("manual").onsubmit=e=>{e.preventDefault(); geocode($("place").value);};
+  }
+}
+
+async function geocode(text){
+  if(!text.trim()) return;
+  showState("loading");
+  try{
+    const res=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=es&q="+encodeURIComponent(text));
+    const j=await res.json();
+    if(!j.length){ showState("noloc"); $("place").value=text; $("state").querySelector("span").textContent="No encuentro ese lugar. Prueba con más detalle (calle y ciudad)."; return; }
+    setPos(+j[0].lat,+j[0].lon,j[0].display_name.split(",").slice(0,2).join(","));
+  }catch(e){ showState("error"); }
+}
+
+function setPos(lat,lon,label){
+  pos={lat,lon}; placeLabel=label; lastKey="";
+  $("locBtn").textContent="📍 "+label;
+  try{ localStorage.setItem("hc-last",JSON.stringify({lat,lon,label})); }catch(e){}
+  go();
+}
+function locate(){
+  if(!navigator.geolocation){ showState("noloc"); return; }
+  showState("locating");
+  navigator.geolocation.getCurrentPosition(
+    p=>setPos(p.coords.latitude,p.coords.longitude,"Cerca de ti"),
+    ()=>{ $("locBtn").textContent="📍 Elegir lugar"; showState("noloc"); },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:60000}
+  );
+}
+async function go(){ await fetchPlaces(); render(); }
+
+$("form").onsubmit=e=>{e.preventDefault(); $("q").blur(); render();};
+$("q").addEventListener("input",()=>{ clearTimeout(window._t); window._t=setTimeout(render,200); });
+$("radius").onchange=()=>{ if(pos) go(); };
+$("openOnly").onchange=render;
+$("locBtn").onclick=()=>{ pos=null; showState("noloc"); };
+
+buildChips();
+locate();
+})();
+</script>
+</body>
+</html>
