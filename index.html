@@ -5,80 +5,90 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hambre Cerca</title>
 <meta name="description" content="Encuentra restaurantes, bares y cafeterías cerca de ti.">
-<meta name="theme-color" content="#1f3a2e">
+<meta name="theme-color" content="#d7362b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Hambre Cerca">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3a2e'/%3E%3Ccircle cx='32' cy='28' r='13' fill='none' stroke='%23f4b942' stroke-width='5'/%3E%3Cpath d='M32 41v12' stroke='%23f4b942' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d7362b'/%3E%3Ccircle cx='32' cy='32' r='18' fill='%23fff'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='%23ffc531' stroke-width='4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: una columna estrecha tipo app; cabecera verde fija con buscador, lista debajo */
+/* Layout: app de una columna; cabecera roja con mantel de cuadros y toldo festoneado, tarjetas tipo ticket de comanda */
 :root{
-  --bg:#f3f5f1; --surface:#ffffff; --ink:#18241e; --muted:#5e6b63; --line:#dde3dc;
-  --brand:#1f3a2e; --on-brand:#f3f5f1; --accent:#f4b942; --on-accent:#1b1a12;
-  --open:#1d7a46; --closed:#b23a2b;
-  --display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --bg:#fbf3e8; --surface:#ffffff; --ink:#2b1d14; --muted:#7a6656; --line:#ecdcc8; --plate:#fff0d4;
+  --tomato:#d7362b; --tomato-ink:#ffffff; --mustard:#ffc531; --on-mustard:#2b1d14;
+  --open:#2f8f46; --closed:#c0392b; --check:rgba(255,255,255,.16);
+  --display:"Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
   --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#0f1512; --surface:#18211c; --ink:#e8eee9; --muted:#9aa8a0; --line:#28332d;
-  --brand:#14251d; --on-brand:#e8eee9; --accent:#f4b942; --on-accent:#1b1a12;
-  --open:#4cc27f; --closed:#ef7a6a; color-scheme:dark;
+  --bg:#1c1411; --surface:#271c17; --ink:#f6ece2; --muted:#bba591; --line:#3d2d24; --plate:#3a2a20;
+  --tomato:#a92a21; --tomato-ink:#fff6ee; --mustard:#ffc531; --on-mustard:#2b1d14;
+  --open:#5cc77a; --closed:#ff8a7a; --check:rgba(255,255,255,.08); color-scheme:dark;
 }}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);min-height:100vh;-webkit-font-smoothing:antialiased}
 .wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header{background:var(--brand);color:var(--on-brand);padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:5;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+header{position:sticky;top:0;z-index:5;color:var(--tomato-ink);padding-top:env(safe-area-inset-top,0px);
+  background-color:var(--tomato);
+  background-image:linear-gradient(90deg,var(--check) 50%,transparent 50%),linear-gradient(var(--check) 50%,transparent 50%);
+  background-size:26px 26px;margin-bottom:14px}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-12px;height:12px;
+  background:radial-gradient(circle at 12px 0,var(--tomato) 12px,transparent 12.5px) 0 0/24px 12px repeat-x;
+  filter:drop-shadow(0 3px 2px rgba(60,20,10,.18))}
 header .wrap{padding-block:14px 14px;display:grid;gap:12px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-h1{font:800 1.5rem/1 var(--display);letter-spacing:-.02em;margin:0}
-h1 span{color:var(--accent)}
-.loc{background:none;border:1px solid rgba(255,255,255,.28);color:var(--on-brand);font:500 .82rem var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.search{display:flex;gap:8px}
-.search input{flex:1;min-width:0;font:500 1.05rem var(--body);padding:13px 14px;border-radius:12px;border:0;background:var(--on-brand);color:#18241e;outline:none}
-.search input:focus-visible{box-shadow:0 0 0 3px var(--accent)}
-.search button{font:600 1rem var(--body);padding:0 16px;border-radius:12px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer}
-.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px 2px}
+h1{font:400 1.9rem/1 var(--display);letter-spacing:.01em;margin:0;text-shadow:0 2px 0 rgba(0,0,0,.18)}
+h1 span{color:var(--mustard)}
+.loc{background:rgba(0,0,0,.18);border:0;color:var(--tomato-ink);font:600 .82rem var(--body);padding:7px 11px;border-radius:999px;cursor:pointer;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search{display:flex;gap:8px;background:#fff;border-radius:999px;padding:5px;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.search input{flex:1;min-width:0;font:500 1.05rem var(--body);padding:10px 14px;border:0;background:transparent;color:#2b1d14;outline:none}
+.search input::placeholder{color:#9b8676}
+.search button{font:400 1.05rem var(--display);letter-spacing:.02em;padding:0 18px;border-radius:999px;border:0;background:var(--mustard);color:var(--on-mustard);cursor:pointer}
+.search:focus-within{box-shadow:0 0 0 3px var(--mustard),0 4px 0 rgba(0,0,0,.15)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:2px 2px 4px}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;font:500 .9rem var(--body);padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:var(--on-brand);cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-block:14px 6px;color:var(--muted);font-size:.9rem}
+.chip{flex:none;font:600 .9rem var(--body);padding:7px 12px;border-radius:999px;border:0;background:#fff;color:#2b1d14;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.15);display:flex;align-items:center;gap:6px}
+.chip .e{font-size:1.05rem;line-height:1}
+.chip[aria-pressed="true"]{background:var(--mustard);color:var(--on-mustard)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-block:12px 8px;color:var(--muted);font-size:.9rem}
 .bar label{display:flex;align-items:center;gap:6px}
-.bar select{font:500 .9rem var(--body);padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-.bar .count{margin-left:auto;font-variant-numeric:tabular-nums}
+.bar select{font:600 .9rem var(--body);padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.bar .count{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
 .toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
-.toggle input{width:18px;height:18px;accent-color:var(--brand)}
-ul{list-style:none;margin:0;padding:0 0 32px;display:grid;gap:10px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:6px}
-.row1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.name{font:600 1.08rem/1.25 var(--display);margin:0;min-width:0;overflow-wrap:anywhere}
-.dist{flex:none;font-weight:600;font-variant-numeric:tabular-nums}
+.toggle input{width:18px;height:18px;accent-color:var(--tomato)}
+ul{list-style:none;margin:0;padding:0 0 32px;display:grid;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;box-shadow:0 2px 0 var(--line)}
+.emo{width:52px;height:52px;border-radius:50%;background:var(--plate);display:grid;place-items:center;font-size:1.7rem;line-height:1;box-shadow:inset 0 0 0 4px var(--surface),0 0 0 1px var(--line)}
+.body{display:grid;gap:5px;min-width:0}
+.row1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.name{font:400 1.2rem/1.15 var(--display);letter-spacing:.01em;margin:0;min-width:0;overflow-wrap:anywhere}
+.dist{flex:none;font-weight:700;font-size:.85rem;font-variant-numeric:tabular-nums;background:var(--mustard);color:var(--on-mustard);padding:3px 9px;border-radius:999px}
 .meta{color:var(--muted);font-size:.9rem;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
-.pill{font-size:.78rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.pill{font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1.5px solid currentColor}
 .pill.open{color:var(--open)} .pill.closed{color:var(--closed)}
 .addr{color:var(--muted);font-size:.88rem}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.actions a{font:600 .88rem var(--body);text-decoration:none;padding:8px 12px;border-radius:10px;border:1px solid var(--line);color:var(--ink);background:var(--bg)}
-.actions a.primary{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
-.actions a:focus-visible,.chip:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;padding-top:10px;border-top:2px dashed var(--line)}
+.actions a{font:700 .88rem var(--body);text-decoration:none;padding:8px 13px;border-radius:999px;border:1.5px solid var(--line);color:var(--ink);background:var(--surface)}
+.actions a.primary{background:var(--tomato);color:var(--tomato-ink);border-color:var(--tomato)}
+.actions a:focus-visible,.chip:focus-visible,button:focus-visible{outline:3px solid var(--mustard);outline-offset:2px}
 .state{text-align:center;padding:40px 12px;color:var(--muted);display:grid;gap:12px;justify-items:center}
-.state strong{color:var(--ink);font:600 1.15rem var(--display)}
-.state button{font:600 1rem var(--body);padding:11px 16px;border-radius:12px;border:0;background:var(--brand);color:var(--on-brand);cursor:pointer}
+.state strong{color:var(--ink);font:400 1.35rem var(--display)}
+.state button{font:400 1.05rem var(--display);padding:11px 18px;border-radius:999px;border:0;background:var(--tomato);color:var(--tomato-ink);cursor:pointer}
 .manual{display:flex;gap:8px;width:100%;max-width:420px}
-.manual input{flex:1;min-width:0;font:500 1rem var(--body);padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--brand);animation:sp .8s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
-.notice{background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:grid;gap:8px;font-size:.92rem}
+.manual input{flex:1;min-width:0;font:500 1rem var(--body);padding:11px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.spin{font-size:2.4rem;line-height:1;animation:bob 1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-12deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.notice{background:var(--surface);border:2px dashed var(--mustard);border-radius:16px;padding:12px 14px;margin-bottom:10px;display:grid;gap:8px;font-size:.92rem}
 .notice[hidden]{display:none}
 .notice p{margin:0}
 .notice .howto{color:var(--muted)}
 .nbtns{display:flex;flex-wrap:wrap;gap:8px}
-.nbtns button{font:600 .9rem var(--body);padding:9px 12px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer}
-.nbtns button.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.nbtns button{font:700 .9rem var(--body);padding:9px 13px;border-radius:999px;border:0;background:var(--mustard);color:var(--on-mustard);cursor:pointer}
+.nbtns button.ghost{background:none;border:1.5px solid var(--line);color:var(--ink)}
 footer{color:var(--muted);font-size:.78rem;text-align:center;padding-block:0 28px}
 footer a{color:inherit}
 </style>
@@ -122,7 +132,7 @@ footer a{color:inherit}
 const $ = id => document.getElementById(id);
 const norm = s => (s||"").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
 
-const QUICK = ["Todo","Tapas","Pizza","Hamburguesa","Sushi","Café","Brunch","Kebab","Chino","Mexicano","Vegano","Helado","Bar"];
+const QUICK = [["Todo","🍽️"],["Tapas","🥘"],["Pizza","🍕"],["Hamburguesa","🍔"],["Sushi","🍣"],["Café","☕"],["Brunch","🥐"],["Kebab","🥙"],["Chino","🍜"],["Mexicano","🌮"],["Vegano","🥗"],["Helado","🍦"],["Bar","🍺"]];
 
 const AMENITY_ES = {restaurant:"Restaurante",fast_food:"Comida rápida",cafe:"Cafetería",bar:"Bar",pub:"Pub",ice_cream:"Heladería",food_court:"Zona de comidas",biergarten:"Cervecería"};
 const CUISINE_ES = {pizza:"Pizza",italian:"Italiano",spanish:"Español",tapas:"Tapas",japanese:"Japonés",sushi:"Sushi",chinese:"Chino",burger:"Hamburguesas",kebab:"Kebab",mexican:"Mexicano",indian:"Indio",thai:"Tailandés",vietnamese:"Vietnamita",korean:"Coreano",american:"Americano",mediterranean:"Mediterráneo",regional:"Cocina regional",seafood:"Marisco",fish:"Pescado",chicken:"Pollo",sandwich:"Bocadillos",coffee_shop:"Café",breakfast:"Desayunos",brunch:"Brunch",ice_cream:"Helados",asian:"Asiático",peruvian:"Peruano",argentinian:"Argentino",steak_house:"Carnes",grill:"Parrilla",barbecue:"Barbacoa",vegetarian:"Vegetariano",vegan:"Vegano",greek:"Griego",french:"Francés",turkish:"Turco",lebanese:"Libanés",arab:"Árabe",venezuelan:"Venezolano",colombian:"Colombiano",ramen:"Ramen",noodle:"Fideos",bakery:"Panadería",crepe:"Crepes",donut:"Dónuts",paella:"Paella",basque:"Vasco",galician:"Gallego",catalan:"Catalán",asturian:"Asturiano",andalusian:"Andaluz",tex_mex:"Tex-Mex",cake:"Pasteles",juice:"Zumos",bubble_tea:"Bubble tea",chocolate:"Chocolatería",churros:"Churros",wine_bar:"Vinos",international:"Internacional",fusion:"Fusión",portuguese:"Portugués",brazilian:"Brasileño",cuban:"Cubano",moroccan:"Marroquí",pakistani:"Pakistaní",nepalese:"Nepalí",hawaiian:"Hawaiano",poke:"Poke",wok:"Wok",dumpling:"Dumplings",bagel:"Bagels",hot_dog:"Perritos",fish_and_chips:"Fish & chips",tea:"Té",friture:"Fritos"};
@@ -160,9 +170,11 @@ let pos = null, placeLabel = "", places = [], lastKey = "";
 
 function buildChips(){
   const box = $("chips");
-  QUICK.forEach(t=>{
+  QUICK.forEach(([t,e])=>{
     const b=document.createElement("button");
-    b.type="button"; b.className="chip"; b.textContent=t;
+    b.type="button"; b.className="chip"; b.dataset.q=t;
+    b.innerHTML='<span class="e" aria-hidden="true"></span><span></span>';
+    b.firstChild.textContent=e; b.lastChild.textContent=t;
     b.setAttribute("aria-pressed", t==="Todo"?"true":"false");
     b.onclick=()=>{ $("q").value = t==="Todo"?"":t; render(); };
     box.appendChild(b);
@@ -171,9 +183,32 @@ function buildChips(){
 function syncChips(){
   const q=norm($("q").value);
   document.querySelectorAll(".chip").forEach(b=>{
-    const t=norm(b.textContent);
+    const t=norm(b.dataset.q);
     b.setAttribute("aria-pressed", (t==="todo"&&!q)||(t===q) ? "true":"false");
   });
+}
+function emojiFor(p){
+  const c=p.cuisines, has=(...k)=>k.some(x=>c.includes(x));
+  if(has("pizza","italian")) return "🍕";
+  if(has("sushi","japanese","poke")) return "🍣";
+  if(has("ramen","noodle","chinese","asian","wok","vietnamese","thai","korean","dumpling")) return "🍜";
+  if(has("burger","american")) return "🍔";
+  if(has("kebab","turkish","lebanese","arab","greek","moroccan")) return "🥙";
+  if(has("mexican","tex_mex")) return "🌮";
+  if(has("indian","pakistani","nepalese")) return "🍛";
+  if(has("seafood","fish")) return "🦐";
+  if(has("steak_house","grill","barbecue","argentinian")) return "🥩";
+  if(has("chicken")) return "🍗";
+  if(has("sandwich","bagel")) return "🥪";
+  if(has("tapas","spanish","regional","paella","mediterranean","basque","galician","catalan","asturian","andalusian")) return "🥘";
+  if(has("vegan","vegetarian")) return "🥗";
+  if(has("ice_cream")||p.amenity==="ice_cream") return "🍦";
+  if(has("breakfast","brunch")) return "🥐";
+  if(has("cake","bakery","donut","churros","chocolate")) return "🍰";
+  if(p.amenity==="cafe"||has("coffee_shop")) return "☕";
+  if(["bar","pub","biergarten"].includes(p.amenity)) return "🍺";
+  if(p.amenity==="fast_food") return "🍟";
+  return "🍽️";
 }
 
 function haversine(a,b){
@@ -315,7 +350,7 @@ function render(){
     const li=document.createElement("li"); li.className="card";
     const kind=[AMENITY_ES[p.amenity]||"Local", ...p.cuisines.slice(0,2).map(c=>CUISINE_ES[c]||c.replace(/_/g," "))];
     const gq=encodeURIComponent(p.name+" "+(p.addr||"")).replace(/%20/g,"+");
-    li.innerHTML=`
+    li.innerHTML=`<div class="emo" aria-hidden="true">${emojiFor(p)}</div><div class="body">
       <div class="row1"><h2 class="name"></h2><span class="dist">${fmtDist(p.dist)}</span></div>
       <div class="meta"><span class="kind"></span><span>· ${walkMin(p.dist)} min andando</span>${p.open===true?'<span class="pill open">Abierto</span>':p.open===false?'<span class="pill closed">Cerrado</span>':''}</div>
       ${p.addr?'<div class="addr"></div>':''}
@@ -323,7 +358,7 @@ function render(){
         <a class="primary" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${p.lat},${p.lon}">Cómo llegar</a>
         <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${gq}&center=${p.lat},${p.lon}">⭐ Ver reseñas</a>
         ${p.tags.phone||p.tags["contact:phone"]?`<a href="tel:${(p.tags.phone||p.tags["contact:phone"]).split(";")[0].replace(/\s/g,"")}">Llamar</a>`:""}
-      </div>`;
+      </div></div>`;
     li.querySelector(".name").textContent=p.name;
     li.querySelector(".kind").textContent=[...new Set(kind)].join(" · ");
     if(p.addr) li.querySelector(".addr").textContent=p.addr;
@@ -333,8 +368,8 @@ function render(){
 
 function showState(kind){
   const s=$("state"); s.hidden=false; $("list").innerHTML=""; $("count").textContent="";
-  if(kind==="loading"){ s.innerHTML='<div class="spin" aria-hidden="true"></div><span>Buscando sitios cerca…</span>'; return; }
-  if(kind==="locating"){ s.innerHTML='<div class="spin" aria-hidden="true"></div><span>Pidiendo tu ubicación…</span>'; return; }
+  if(kind==="loading"){ s.innerHTML='<div class="spin" aria-hidden="true">🍳</div><span>Buscando sitios cerca…</span>'; return; }
+  if(kind==="locating"){ s.innerHTML='<div class="spin" aria-hidden="true">📍</div><span>Pidiendo tu ubicación…</span>'; return; }
   if(kind==="error"){ s.innerHTML='<strong>No he podido cargar los sitios</strong><span>El servicio de mapas no responde. Prueba otra vez en un momento.</span><button type="button" id="retry">Reintentar</button>'; $("retry").onclick=()=>{lastKey="";go();}; return; }
   if(kind==="empty"){ s.innerHTML='<strong>Nada con ese nombre por aquí</strong><span>Prueba otra palabra o amplía el radio.</span>'; return; }
   if(kind==="none"){ s.innerHTML='<strong>No hay sitios en este radio</strong><span>Amplía el radio de búsqueda.</span>'; return; }
