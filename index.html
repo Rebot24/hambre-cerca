@@ -72,6 +72,13 @@ ul{list-style:none;margin:0;padding:0 0 32px;display:grid;gap:10px}
 .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--brand);animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.notice{background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:grid;gap:8px;font-size:.92rem}
+.notice[hidden]{display:none}
+.notice p{margin:0}
+.notice .howto{color:var(--muted)}
+.nbtns{display:flex;flex-wrap:wrap;gap:8px}
+.nbtns button{font:600 .9rem var(--body);padding:9px 12px;border-radius:10px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer}
+.nbtns button.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
 footer{color:var(--muted);font-size:.78rem;text-align:center;padding-block:0 28px}
 footer a{color:inherit}
 </style>
@@ -104,6 +111,7 @@ footer a{color:inherit}
     <label class="toggle"><input type="checkbox" id="openOnly"> Solo abiertos</label>
     <span class="count" id="count"></span>
   </div>
+  <div class="notice" id="notice" role="status" hidden></div>
   <ul id="list"></ul>
   <div class="state" id="state"></div>
 </main>
@@ -332,7 +340,7 @@ function showState(kind){
   if(kind==="none"){ s.innerHTML='<strong>No hay sitios en este radio</strong><span>Amplía el radio de búsqueda.</span>'; return; }
   if(kind==="noloc"){
     s.innerHTML='<strong>¿Dónde estás?</strong><span>Activa la ubicación o escribe una calle, barrio o ciudad.</span><button type="button" id="geo">📍 Usar mi ubicación</button><form class="manual" id="manual"><input id="place" placeholder="Ej.: Plaza Mayor, Madrid" aria-label="Lugar"><button type="submit">Ir</button></form>';
-    $("geo").onclick=locate;
+    $("geo").onclick=()=>locate(true);
     $("manual").onsubmit=e=>{e.preventDefault(); geocode($("place").value);};
   }
 }
@@ -351,16 +359,51 @@ async function geocode(text){
 function setPos(lat,lon,label){
   pos={lat,lon}; placeLabel=label; lastKey="";
   $("locBtn").textContent="📍 "+label;
+  $("notice").hidden=true;
   try{ localStorage.setItem("hc-last",JSON.stringify({lat,lon,label})); }catch(e){}
   go();
 }
-function locate(){
-  if(!navigator.geolocation){ showState("noloc"); return; }
+const DENIED="Tu navegador tiene bloqueada la ubicación para esta web, por eso no te la pide.";
+const HOWTO="Para activarla: toca el candado o «aA» junto a la dirección → Ubicación → Permitir, y recarga la página. En iPhone revisa también Ajustes → Privacidad → Localización → Safari → «Al usar la app». Si abriste el enlace desde WhatsApp o Instagram, ábrelo en Chrome o Safari.";
+function showNotice(msg,howto){
+  const n=$("notice"); n.hidden=false;
+  n.innerHTML='<p><strong></strong></p>'+(howto?'<p class="howto"></p>':'')+'<div class="nbtns"><button type="button" id="exact">📍 Usar ubicación exacta</button><button type="button" id="pick" class="ghost">Elegir otro lugar</button></div>';
+  n.querySelector("strong").textContent=msg;
+  if(howto) n.querySelector(".howto").textContent=HOWTO;
+  $("exact").onclick=()=>locate(true);
+  $("pick").onclick=()=>{ pos=null; n.hidden=true; showState("noloc"); };
+}
+// ubicación aproximada por la conexión, sin permisos
+async function approx(msg,howto){
+  showState("locating");
+  const srcs=[
+    ["https://ipapi.co/json/",j=>[j.latitude,j.longitude,j.city]],
+    ["https://ipwho.is/",j=>[j.latitude,j.longitude,j.city]],
+    ["https://get.geojs.io/v1/ip/geo.json",j=>[+j.latitude,+j.longitude,j.city]]
+  ];
+  for(const [u,f] of srcs){
+    try{
+      const c=new AbortController(); setTimeout(()=>c.abort(),6000);
+      const [lat,lon,city]=f(await (await fetch(u,{signal:c.signal})).json());
+      if(isFinite(lat)&&isFinite(lon)){
+        setPos(+lat,+lon,"Aprox.: "+(city||"tu zona"));
+        showNotice(msg+" De momento uso tu ubicación aproximada (puede variar 1-2 km).",howto);
+        return;
+      }
+    }catch(e){}
+  }
+  $("locBtn").textContent="📍 Elegir lugar"; showState("noloc"); showNotice(msg,howto);
+}
+async function locate(fromClick){
+  if(!navigator.geolocation||!window.isSecureContext){ approx("Este navegador no permite usar la ubicación.",false); return; }
+  let st="prompt";
+  try{ st=(await navigator.permissions.query({name:"geolocation"})).state; }catch(e){}
+  if(st==="denied" && !fromClick){ approx(DENIED,true); return; }
   showState("locating");
   navigator.geolocation.getCurrentPosition(
     p=>setPos(p.coords.latitude,p.coords.longitude,"Cerca de ti"),
-    ()=>{ $("locBtn").textContent="📍 Elegir lugar"; showState("noloc"); },
-    {enableHighAccuracy:true,timeout:12000,maximumAge:60000}
+    e=>{ if(e.code===1) approx(DENIED,true); else approx("No he podido obtener tu ubicación exacta (¿GPS desactivado?).",false); },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:60000}
   );
 }
 async function go(){ await fetchPlaces(); render(); }
